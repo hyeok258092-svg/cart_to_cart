@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오픈마켓 견적서 변환기</title>
+<style>
+  :root {
+    --bg: #eaeef3; --card: #ffffff; --line: #d5dce5; --ink: #16212e;
+    --sub: #586573; --brand: #123e73; --brand-2: #1d5aa6; --brand-ink: #ffffff;
+    --band: #0f3562; --band-ink: #eaf1fb; --band-line: #2b5688;
+    --ok: #1c7a3f; --bad: #c0392b; --warn-bg: #fff8e6; --warn-line: #e2c25a;
+    --code-bg: #f2f5f9; --shadow: 0 1px 2px rgba(16,32,60,.06), 0 8px 24px rgba(16,32,60,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e141d; --card: #161e2a; --line: #27313f; --ink: #e6ecf3;
+      --sub: #96a3b2; --brand: #2f6fb5; --brand-2: #6aa2e6; --brand-ink: #ffffff;
+      --band: #0c1926; --band-ink: #dce8f6; --band-line: #223247;
+      --code-bg: #10161f; --warn-bg: #2a2510; --warn-line: #6b5a1f;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e141d; --card: #161e2a; --line: #27313f; --ink: #e6ecf3;
+    --sub: #96a3b2; --brand: #2f6fb5; --brand-2: #6aa2e6; --brand-ink: #ffffff;
+    --band: #0c1926; --band-ink: #dce8f6; --band-line: #223247;
+    --code-bg: #10161f; --warn-bg: #2a2510; --warn-line: #6b5a1f;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.3);
+  }
+  :root[data-theme="light"] {
+    --bg: #eaeef3; --card: #ffffff; --line: #d5dce5; --ink: #16212e;
+    --sub: #586573; --brand: #123e73; --brand-2: #1d5aa6; --brand-ink: #ffffff;
+    --band: #0f3562; --band-ink: #eaf1fb; --band-line: #2b5688;
+    --code-bg: #f2f5f9; --warn-bg: #fff8e6; --warn-line: #e2c25a;
+    --shadow: 0 1px 2px rgba(16,32,60,.06), 0 8px 24px rgba(16,32,60,.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", system-ui, -apple-system, sans-serif;
+    line-height: 1.6; font-size: 15px; -webkit-font-smoothing: antialiased;
+  }
+  /* ---- 상단 관인 밴드 ---- */
+  .topbar { height: 4px; background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%); }
+  .masthead { background: var(--band); color: var(--band-ink); border-bottom: 1px solid var(--band-line); }
+  .masthead .inner { max-width: 880px; margin: 0 auto; padding: 20px 18px; display: flex; align-items: center; gap: 14px; }
+  .emblem { flex: none; width: 46px; height: 46px; display: grid; place-items: center;
+    border: 1.5px solid rgba(255,255,255,.35); border-radius: 50%; }
+  .masthead h1 { font-size: 20px; margin: 0; letter-spacing: -.3px; font-weight: 700; color: #fff; }
+  .masthead .sub { margin: 2px 0 0; font-size: 12.5px; color: var(--band-ink); opacity: .82; }
+  .mast-tag { margin-left: auto; font-size: 11.5px; letter-spacing: .3px; padding: 4px 10px;
+    border: 1px solid rgba(255,255,255,.28); border-radius: 999px; color: var(--band-ink); white-space: nowrap; }
+  /* ---- 본문 ---- */
+  .wrap { max-width: 880px; margin: 0 auto; padding: 26px 18px 40px; }
+  .lead { color: var(--sub); margin: 0 0 22px; font-size: 13.5px; padding: 12px 16px;
+    background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--brand-2);
+    border-radius: 8px; box-shadow: var(--shadow); }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 22px; margin-bottom: 18px; box-shadow: var(--shadow);
+  }
+  .cardhead { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .badge { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--brand); color: #fff; font-size: 13px; font-weight: 700; }
+  .cardtitle { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+  .cardtitle .opt { font-weight: 400; color: var(--sub); font-size: 13px; }
+  .hint { color: var(--sub); font-size: 12.5px; margin: 8px 0 0; line-height: 1.55; }
+  input[type="password"], input[type="text"] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--ink); font-size: 14px; transition: border-color .15s, box-shadow .15s;
+  }
+  input[type="password"]:focus, input[type="text"]:focus {
+    outline: none; border-color: var(--brand-2); box-shadow: 0 0 0 3px rgba(29,90,166,.15);
+  }
+  .drop {
+    border: 1.5px dashed var(--line); border-radius: 10px; padding: 26px;
+    text-align: center; color: var(--sub); cursor: pointer; transition: .15s; background: var(--bg);
+  }
+  .drop:hover { border-color: var(--brand-2); }
+  .drop.hover { border-color: var(--brand-2); color: var(--brand-2); background: rgba(29,90,166,.05); }
+  .drop b { color: var(--ink); font-weight: 600; }
+  .accum-bar { margin: 12px 0 0; padding: 9px 13px; font-size: 13px; color: var(--ink);
+    background: rgba(29,90,166,.06); border: 1px solid var(--brand-2); border-radius: 8px; }
+  .accum-bar a { margin-left: 6px; }
+  .filelist { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
+  .filelist li { padding: 8px 12px; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 6px; display: flex; align-items: center; }
+  .filelist .rm { color: var(--bad); cursor: pointer; margin-left: auto; font-size: 12px; font-weight: 600; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  button {
+    font-family: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 18px;
+    background: var(--card); color: var(--ink); transition: .12s;
+  }
+  button:hover:not(:disabled) { border-color: var(--brand-2); color: var(--brand-2); }
+  button.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+  button.primary:hover:not(:disabled) { background: var(--brand-2); border-color: var(--brand-2); color: #fff; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .chk { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--sub); margin-top: 12px; }
+  .chk input { width: 16px; height: 16px; accent-color: var(--brand); }
+  #status { font-size: 13.5px; color: var(--sub); min-height: 20px; white-space: pre-wrap; }
+  .spinner {
+    display: inline-block; width: 13px; height: 13px; border: 2px solid var(--line);
+    border-top-color: var(--brand-2); border-radius: 50%; animation: spin .8s linear infinite;
+    vertical-align: -2px; margin-right: 7px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress { height: 7px; background: var(--line); border-radius: 999px; overflow: hidden; margin-top: 12px; }
+  .progress > i { display: block; height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%); border-radius: 999px; transition: width .25s ease; }
+  .grid2 { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+  label.sel { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--sub); font-weight: 700;
+    letter-spacing: .2px; flex: 1 1 200px; }
+  label.sel select {
+    font-family: inherit; font-size: 13.5px; padding: 9px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--ink); font-weight: 400; cursor: pointer;
+  }
+  label.sel select:focus { outline: none; border-color: var(--brand-2); box-shadow: 0 0 0 3px rgba(29,90,166,.15); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+  th, td { border: 1px solid var(--line); padding: 7px 9px; text-align: right; }
+  th { background: var(--band); color: var(--band-ink); font-weight: 600; }
+  td.l, th.l { text-align: left; }
+  tbody tr:nth-child(even) td { background: var(--code-bg); }
+  .ok { color: var(--ok); font-weight: 700; }
+  .bad { color: var(--bad); font-weight: 700; }
+  pre.report {
+    background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px; font-size: 12.5px; overflow-x: auto; white-space: pre-wrap; margin: 14px 0 0; line-height: 1.55;
+  }
+  .err { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px; padding: 11px 14px; font-size: 13px; margin-top: 14px; }
+  .hidden { display: none; }
+  /* ---- 탭 ---- */
+  .tabs { display: flex; gap: 4px; margin: 0 0 20px; border-bottom: 2px solid var(--line); }
+  .tab { flex: 0 0 auto; border: 1px solid var(--line); border-bottom: none;
+    border-radius: 9px 9px 0 0; background: var(--bg); color: var(--sub);
+    font-family: inherit; font-size: 14px; font-weight: 700; padding: 11px 18px; margin-bottom: -2px;
+    cursor: pointer; transition: .12s; }
+  .tab:hover:not(.active) { color: var(--brand-2); }
+  .tab.active { background: var(--card); color: var(--brand); border-color: var(--line);
+    border-bottom: 2px solid var(--card); }
+  .tab .t2 { display: block; font-weight: 400; font-size: 11px; color: var(--sub); margin-top: 1px; }
+  .tab.active .t2 { color: var(--brand-2); }
+  /* ---- 사용방법 ---- */
+  .guide h3 { font-size: 15px; margin: 22px 0 8px; color: var(--ink); letter-spacing: -.2px; }
+  .guide h3:first-child { margin-top: 2px; }
+  .guide ol, .guide ul { margin: 0 0 10px; padding-left: 20px; }
+  .guide li { margin-bottom: 6px; font-size: 13.5px; }
+  .guide p { font-size: 13.5px; margin: 0 0 10px; }
+  .guide code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; font-size: 12.5px; }
+  .flow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 4px 0 14px; }
+  .flow span { background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+    padding: 5px 10px; font-size: 12.5px; color: var(--sub); }
+  .flow span.on { background: rgba(29,90,166,.08); border-color: var(--brand-2); color: var(--brand); font-weight: 700; }
+  .flow i { color: var(--sub); font-style: normal; }
+  .method { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 0 0 12px; }
+  .method.rec { border-color: var(--brand-2); background: rgba(29,90,166,.04); }
+  .method-h { font-weight: 700; font-size: 14.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .method-n { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: #fff;
+    display: grid; place-items: center; font-size: 13px; }
+  .rec-tag { font-size: 11px; font-weight: 700; color: var(--brand-2); border: 1px solid var(--brand-2);
+    border-radius: 999px; padding: 1px 8px; }
+  .base-tag { font-size: 11px; font-weight: 700; color: var(--sub); border: 1px solid var(--line);
+    border-radius: 999px; padding: 1px 8px; }
+  .bm-box { margin: 12px 0 0; padding: 14px 16px; border: 1px solid var(--brand-2);
+    border-radius: 10px; background: var(--card); }
+  .bm-drag { display: inline-block; padding: 11px 20px; background: var(--brand); color: #fff;
+    border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14.5px; cursor: grab; }
+  .bm-drag:hover { background: var(--brand-2); }
+  a.ghost { color: var(--brand-2); text-decoration: none; font-size: 13px; font-weight: 600; }
+  a.ghost:hover { text-decoration: underline; }
+  .divider { height: 1px; background: var(--line); margin: 16px 0; }
+  /* ---- 에듀파인 본문 만들기 ---- */
+  .fill { display: flex; gap: 14px; flex-wrap: wrap; }
+  .fill + .fill { margin-top: 14px; }
+  label.fld { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--sub);
+    font-weight: 700; letter-spacing: .2px; flex: 1 1 240px; }
+  label.fld .opt2 { font-weight: 400; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px;
+    font-size: 12px; color: var(--sub); }
+  .chip { border: 1px solid var(--line); background: var(--bg); color: var(--sub); border-radius: 999px;
+    padding: 4px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; line-height: 1.3; }
+  .chip:hover { border-color: var(--brand-2); color: var(--brand-2); }
+  .chip.sug { border-style: dashed; }
+  .bonmun { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 15px 17px; font-size: 13.5px; white-space: pre-wrap; line-height: 1.85; }
+  .bonmun mark { background: var(--warn-bg); color: var(--bad); border: 1px solid var(--warn-line);
+    border-radius: 4px; padding: 0 4px; font-weight: 700; }
+  textarea.tpl { width: 100%; min-height: 200px; padding: 12px 13px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--ink); font-family: inherit;
+    font-size: 13px; line-height: 1.8; resize: vertical; }
+  textarea.tpl:focus { outline: none; border-color: var(--brand-2); box-shadow: 0 0 0 3px rgba(29,90,166,.15); }
+  .opt-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .opt-tick { flex: 0 0 132px; display: flex; align-items: center; gap: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 700; color: var(--sub); user-select: none; }
+  .opt-tick input { flex: none; width: 16px; height: 16px; accent-color: var(--brand); }
+  .opt-row > input[type="text"] { flex: 1 1 220px; }
+  .opt-row.off .opt-tick { font-weight: 400; }
+  .opt-row.off > input[type="text"] { opacity: .5; }
+  @media (max-width: 560px) {
+    .opt-row { flex-wrap: wrap; gap: 6px; } .opt-tick { flex-basis: 100%; }
+  }
+  .needfix { font-size: 12.5px; font-weight: 700; color: var(--bad); }
+  .needfix.done { color: var(--ok); }
+  .hint code { background: var(--code-bg); border: 1px solid var(--line); padding: 0 4px;
+    border-radius: 3px; font-size: 12px; }
+  .gov-footer { max-width: 880px; margin: 8px auto 0; padding: 20px 18px 40px; color: var(--sub); font-size: 12px; line-height: 1.7; border-top: 1px solid var(--line); }
+  .gov-footer b { color: var(--ink); font-weight: 600; }
+  .gov-footer .contact { margin: 0 0 14px; padding: 11px 14px; font-size: 13px; color: var(--ink);
+    background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--brand-2);
+    border-radius: 8px; box-shadow: var(--shadow); }
+  .gov-footer .contact b { color: var(--brand-2); }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--band); color: var(--band-ink); padding: 11px 18px; border-radius: 8px;
+    font-size: 13.5px; opacity: 0; transition: opacity .2s; pointer-events: none; box-shadow: var(--shadow);
+    border: 1px solid var(--band-line);
+  }
+  .toast.show { opacity: .97; }
+  @media (max-width: 560px) {
+    .masthead .inner { padding: 16px; } .mast-tag { display: none; }
+    .card { padding: 16px; } .wrap { padding: 20px 14px 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header class="masthead">
+  <div class="inner">
+    <span class="emblem" aria-hidden="true">
+      <svg viewBox="0 0 44 44" width="26" height="26" fill="none" stroke="#eaf1fb" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 5h13l7 7v27H13z"/>
+        <path d="M26 5v7h7"/>
+        <path d="M17 22l3.5 3.5L28 18"/>
+      </svg>
+    </span>
+    <div>
+      <h1>오픈마켓 장바구니·견적서 변환기</h1>
+      <p class="sub">지마켓 · 옥션 · 11번가 → 에듀파인 서식으로 정리 · 교원 품의 & 행정직 원인행위</p>
+    </div>
+    <span class="mast-tag">브라우저 내 처리 · 무설치</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="tab-teacher" data-tab="teacher" role="tab">품의자<span class="t2">교원 · 품의</span></button>
+    <button class="tab" id="tab-admin" data-tab="admin" role="tab">원인행위<span class="t2">행정직</span></button>
+    <button class="tab" id="tab-guide" data-tab="guide" role="tab">사용방법<span class="t2">처음이면 여기</span></button>
+  </div>
+
+  <p class="lead" id="lead-teacher">선생님이 <b>품의</b>할 때 쓰는 화면입니다. 장바구니(또는 견적서)를 넣으면 에듀파인 <b>품의용 「품목내역」</b> 서식과, 행정실에 넘길 정리본을 만들어 줍니다. 모든 처리는 <b>이 브라우저 안에서만</b> 이뤄지고 파일·API 키는 서버로 전송되지 않습니다.</p>
+  <p class="lead hidden" id="lead-admin">행정직이 <b>원인행위</b>할 때 쓰는 화면입니다. 견적서를 넣으면 에듀파인 <b>「물품내역」</b> 업로드 서식과 검토용 보고서(요약·원문대조)를 만들어 줍니다. 모든 처리는 <b>이 브라우저 안에서만</b> 이뤄집니다.</p>
+
+  <div id="pane-work">
+  <div class="card">
+    <div class="cardhead"><span class="badge">1</span><span class="cardtitle">견적서 파일 업로드</span></div>
+    <div class="drop" id="drop">
+      <b>파일을 끌어다 놓거나</b> 클릭하여 선택하세요<br>
+      <span class="hint">지마켓 · 옥션 (.xls) / 11번가 (.pdf) — 여러 개 동시 가능</span>
+    </div>
+    <input type="file" id="file" class="hidden" multiple accept=".xls,.xlsx,.pdf">
+    <div class="accum-bar hidden" id="accum-bar"></div>
+    <ul class="filelist" id="filelist"></ul>
+  </div>
+
+  <div class="card">
+    <div class="cardhead"><span class="badge">2</span><span class="cardtitle">Gemini API 키 <span class="opt">(선택 · 품명 자동 정리)</span></span></div>
+    <input type="password" id="key" placeholder="API 키 붙여넣기 — 비워두면 규칙 기반으로 정리" autocomplete="off">
+    <p class="hint">품명을 더 깔끔하게 정리하려면 본인 Gemini 키를 넣으세요. 키는 이 브라우저에서 구글로 직접 전송되며 서버를 거치지 않습니다. <a class="ghost" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">키 발급 →</a></p>
+    <label class="chk"><input type="checkbox" id="remember"> 이 브라우저에 키 기억하기 (본인 PC에서만 권장)</label>
+    <div class="grid2">
+      <label class="sel">모델
+        <select id="model">
+          <option value="gemini-flash-latest" selected>flash · 품질 우선(권장)</option>
+          <option value="gemini-flash-lite-latest">flash-lite · 저비용/대량</option>
+        </select>
+      </label>
+      <label class="sel">정리 강도 (thinking)
+        <select id="thinking">
+          <option value="minimal">minimal · 가장 저렴·빠름</option>
+          <option value="low" selected>low · 권장(품질/비용 균형)</option>
+          <option value="medium">medium · 품질↑·비쌈</option>
+          <option value="">끄기(모델 기본값)</option>
+        </select>
+      </label>
+    </div>
+    <p class="hint"><b>무료 티어 키는 요금이 청구되지 않습니다.</b> 결과의 "약 N원"은 <b>유료 키 기준</b> 참고 비용입니다. 기본값 <b>flash + low</b>는 옵션·규격까지 깔끔하게 정리해 공문서에 적합합니다(견적서 1건당 유료 기준 15원 안팎). 대량·저비용이 우선이면 <b>flash-lite</b>로 바꾸세요. 넣기 전 <b>검토용 보고서의 원문대조</b>로 확인을 권장합니다.</p>
+  </div>
+
+  <div class="card">
+    <div class="cardhead"><span class="badge">3</span><span class="cardtitle">변환 실행</span></div>
+    <div class="row">
+      <button class="primary" id="run" disabled>변환하기</button>
+      <span id="status"><span class="spinner"></span>준비 중… (처음 한 번은 파이썬 런타임을 내려받아 조금 걸립니다)</span>
+    </div>
+    <div class="progress hidden" id="progress"><i id="progressBar"></i></div>
+  </div>
+
+  <div class="card hidden" id="results">
+    <div class="cardhead"><span class="badge">✓</span><span class="cardtitle">변환 결과</span></div>
+    <div id="summary"></div>
+
+    <div class="row" id="dl-teacher" style="margin:16px 0 0;">
+      <button class="primary" id="download-pumui">에듀파인 품의용 (품목내역.xlsx)</button>
+      <button id="download-handoff">행정실 넘기기용 (.xlsx)</button>
+      <button id="copy-teacher">표 복사</button>
+    </div>
+    <p class="hint" id="hint-teacher">품의용은 「품목내역」 서식(내용·규격·단위·수량·예상단가)이라 에듀파인 품의에 바로 올립니다. 예상단가는 올림 처리되어, 저장하면 예상금액이 실결제에 맞게 채워집니다. 행정실 넘기기용은 몰·품목·수량·금액에 더해 <b>비고에 원본 장바구니 품명·판매자</b>를 담아, 같은 상품을 다시 담기 쉽게 한 정리본입니다.</p>
+
+    <div class="row hidden" id="dl-admin" style="margin:16px 0 0;">
+      <button class="primary" id="download-edufine">에듀파인 업로드용 (물품내역.xlsx)</button>
+      <button id="download">검토용 보고서 (.xlsx)</button>
+      <button id="copy">표 복사</button>
+    </div>
+    <p class="hint hidden" id="hint-admin">에듀파인 업로드용은 「물품내역」 서식 그대로라 내려받아 바로 올릴 수 있습니다. 검토용 보고서는 요약·원문대조까지 담은 확인용입니다.</p>
+    <div class="divider"></div>
+    <pre class="report" id="report"></pre>
+    <div id="errors"></div>
+  </div>
+
+  <div class="card hidden" id="bonmun-card">
+    <div class="cardhead"><span class="badge">✎</span><span class="cardtitle">에듀파인 본문 문구 <span class="opt">(선택 · 복사해서 붙여넣기)</span></span></div>
+    <p class="hint" style="margin:0 0 16px;">품목·수량·금액은 변환 결과에서 <b>자동으로</b> 채웁니다.
+      <b>어디에 쓸 물건인지(사용처)만</b> 견적서에 없는 정보라 직접 넣어야 하고, 나머지는 넣고 싶은 것만 넣으면 됩니다.
+      한 번 넣은 값은 이 브라우저가 기억해 다음 품의부터 그대로 나옵니다.
+      사용처를 비우면 <b>임의로 지어내지 않고</b> <mark style="background:var(--warn-bg);padding:0 3px;border-radius:3px;">○○○○</mark> 로 남깁니다.</p>
+
+    <div class="fill">
+      <label class="fld">사용처 (부서 · 교실)
+        <input type="text" id="bon-dept" list="bon-dept-list" placeholder="예: 행정실 / 과학실 / 3학년" autocomplete="off">
+      </label>
+      <label class="fld">물품 성격 <span class="opt2" id="bon-kind-note"></span>
+        <input type="text" id="bon-kind" list="bon-kind-list" placeholder="예: 사무용품" autocomplete="off">
+      </label>
+    </div>
+    <div class="chips" id="bon-chips"></div>
+
+    <div class="fill">
+      <label class="fld" style="flex:1 1 340px;">구입품목 요약 <span class="opt2">— ▾ 를 눌러 대표로 세울 품목을 고르거나 직접 쓰세요</span>
+        <input type="text" id="bon-summary" list="bon-summary-list" autocomplete="off">
+      </label>
+      <label class="sel" style="flex:0 1 210px; justify-content:flex-end;">표현
+        <select id="bon-summary-form">
+          <option value="외" selected>○○ 외 N종 (총 M점)</option>
+          <option value="등">○○ 등 N종</option>
+        </select>
+      </label>
+    </div>
+    <datalist id="bon-summary-list"></datalist>
+
+    <div class="divider"></div>
+
+    <p class="hint" style="margin:0 0 4px;"><b>넣을 항목만 고르세요.</b>
+      체크를 끄거나 칸을 비우면 그 줄은 본문에서 아예 사라지고, 남은 항목의 번호(<code>1. 2.</code> · <code>가. 나. 다.</code>)가 다시 매겨집니다.
+      간단한 물품이면 다 꺼 두고 품목·금액만 남겨도 됩니다.</p>
+    <div id="bon-opts"></div>
+
+    <div class="divider"></div>
+
+    <div class="row" style="margin-bottom:12px;">
+      <button class="primary" id="bon-copy">본문 복사</button>
+      <button id="bon-tpl-toggle">서식 편집</button>
+      <span class="needfix" id="bon-warn"></span>
+    </div>
+    <div class="bonmun" id="bon-out"></div>
+
+    <div class="hidden" id="bon-tpl-box" style="margin-top:14px;">
+      <textarea class="tpl" id="bon-tpl" spellcheck="false"></textarea>
+      <p class="hint">
+        <b>번호</b> — 줄 앞의 <code>#.</code> 는 바깥 단계, <code>@.</code> 는 안쪽 단계입니다. 기호(<code>1. 2.</code> · <code>가. 나.</code>)와 들여쓰기는 자동으로 붙으니
+        서식에는 <code>#.</code> · <code>@.</code> 만 적으면 됩니다. 항목이 하나뿐이면 공문서 작성 규칙대로 기호를 생략하고,
+        그래서 바깥 단계가 사라지면 <b>안쪽 항목이 <code>가. 나.</code> 에서 <code>1. 2.</code> 로 올라옵니다.</b><br>
+        <b>자동 치환</b> — <code>{품목요약}</code> <code>{건수}</code> <code>{수량}</code> <code>{금액}</code> <code>{금액한글}</code> <code>{오늘}</code> <code>{사용처}</code> <code>{물품군}</code><br>
+        <b>켜고 끄는 항목</b> — <code>{목적}</code> <code>{관련}</code> <code>{구입처}</code> <code>{계약상대자}</code> <code>{계약방법}</code> <code>{예산과목}</code>
+        · 여기 쓴 치환자만 위에 체크 칸으로 나타나고, <b>값이 비면 그 줄은 통째로 빠집니다.</b><br>
+        고친 서식은 이 브라우저에 저장되어 다음에도 그대로 쓰입니다.
+        <a class="ghost" href="#" id="bon-tpl-reset">기본 서식으로 되돌리기</a><br>
+        ※ 구입처 칸을 비워 두면 실제 <b>몰 이름</b>이 들어갑니다. 이때 <b>11번가 장바구니는 변환 구조상 「옥션」이 함께 표기될 수 있으니</b>
+        확인하세요. 기본값이 "온라인 오픈마켓"인 이유입니다.</p>
+    </div>
+
+    <datalist id="bon-dept-list">
+      <option value="행정실"></option><option value="교무실"></option><option value="과학실"></option>
+      <option value="보건실"></option><option value="도서실"></option><option value="급식실"></option>
+      <option value="컴퓨터실"></option><option value="음악실"></option><option value="미술실"></option>
+      <option value="체육관"></option><option value="돌봄교실"></option><option value="유치원"></option>
+      <option value="1학년"></option><option value="2학년"></option><option value="3학년"></option>
+      <option value="4학년"></option><option value="5학년"></option><option value="6학년"></option>
+    </datalist>
+    <datalist id="bon-kind-list"></datalist>
+  </div>
+  </div><!-- /#pane-work -->
+
+  <div id="pane-guide" class="card guide hidden">
+    <div class="cardhead"><span class="badge">?</span><span class="cardtitle">사용방법</span></div>
+
+    <h3>이 도구는 무엇을 하나요?</h3>
+    <p>지마켓·옥션·11번가에서 담은 물건을, <b>에듀파인에 올릴 수 있는 엑셀</b>로 자동 정리합니다.
+       품명이 광고 문구로 길게 늘어진 것도 규격·수량·금액을 맞춰 깔끔하게 만들어 줍니다.</p>
+
+    <h3>누가 쓰나요? — 위 탭을 고르세요</h3>
+    <ul>
+      <li><b>품의자(교원)</b> — 선생님이 물건을 사달라고 <b>품의</b>할 때. 에듀파인 <b>품의용 「품목내역」</b> 서식이 나옵니다.</li>
+      <li><b>원인행위(행정직)</b> — 행정실에서 <b>원인행위</b>할 때. 에듀파인 <b>「물품내역」</b> 서식과 검토용 보고서가 나옵니다.</li>
+    </ul>
+
+    <h3>전체 흐름</h3>
+    <div class="flow">
+      <span><b>①</b> 장바구니에서 살 것 체크</span><i>→</i>
+      <span class="on"><b>②</b> 변환기에 넣기</span><i>→</i>
+      <span><b>③</b> 변환하기</span><i>→</i>
+      <span><b>④</b> 엑셀 내려받아 에듀파인에 파일 업로드</span>
+    </div>
+
+    <h3>② 변환기에 넣기 — 두 가지 방법 중 하나</h3>
+    <p class="hint" style="margin-top:0">위 흐름의 <b>②번(넣기)</b>을 하는 방법입니다. 아래 <b>파일 올리기 칸</b>·<b>변환하기</b>·<b>API 키 칸</b>은 <b>품의자</b> 또는 <b>원인행위</b> 탭에 있습니다. 이 사용방법 탭에는 없으니, 위에서 <b>탭을 바꿔</b> 주세요.</p>
+
+    <div class="method">
+      <div class="method-h"><span class="method-n">1</span> 견적서 파일 올리기 <span class="base-tag">기본</span></div>
+      <p style="margin:0">쇼핑몰 장바구니에서 <b>견적서 출력</b>으로 받은 파일(<code>.xls</code>, 11번가는 <code>.pdf</code>)을,
+        <b>품의자</b> 또는 <b>원인행위</b> 탭의 <b>파일 올리기 칸</b>에 끌어다 놓습니다. 여러 개 한 번에 됩니다.</p>
+    </div>
+
+    <div class="method rec">
+      <div class="method-h"><span class="method-n">2</span> 장바구니 북마클릿 (원클릭) <span class="rec-tag">권장</span></div>
+      <p>장바구니에서 살 것만 체크하고 북마크를 누르면 변환기 화면에 <b>담깁니다</b>.
+        여러 몰을 이어서 담을 수 있고(지마켓에서 누르고 옥션에서 또 누르면 한 화면에 쌓입니다),
+        <b>다 담은 뒤 [변환하기]를 한 번만</b> 누릅니다. <b>장바구니에 담은 순서 그대로</b> 정리됩니다(견적서 출력은 순서가 섞입니다).</p>
+
+      <div class="bm-box">
+        <p style="margin:0 0 4px"><b>설치 (한 번만)</b> — 아래 버튼을 브라우저 <b>북마크바로 끌어다 놓으세요.</b> (북마크바가 안 보이면 <code>Ctrl+Shift+B</code>)</p>
+        <p style="margin:10px 0"><a class="bm-drag" id="bm-btn" href="#" draggable="true">🧾 장바구니 → 견적 변환</a>
+           <span class="hint" id="bm-status" style="display:inline; margin-left:8px">불러오는 중…</span></p>
+        <p style="margin:0 0 8px">이 북마클릿 하나로 <b>품의자·원인행위 모두</b> 씁니다 — 누르면 품의자 화면으로 열리고, 행정직이면 <b>원인행위</b> 탭으로 바꾸면 됩니다. 지마켓·옥션·11번가 장바구니에서 작동합니다.</p>
+        <p style="margin:0"><a class="ghost" href="#" id="bm-copy">드래그가 안 되면 · 코드 복사</a></p>
+        <div id="bm-copy-help" class="hidden" style="margin-top:8px">
+          <p class="hint" style="margin:0 0 6px">복사한 코드로 북마크를 직접 만드는 방법:</p>
+          <ol style="margin:0 0 8px">
+            <li>아래 코드는 <b>이미 복사</b>되었습니다.</li>
+            <li>북마크바 빈 곳을 <b>우클릭 → '페이지 추가'</b>(브라우저에 따라 '새 북마크')</li>
+            <li>이름은 아무거나, <b>URL(주소) 칸에 붙여넣기</b> → 저장</li>
+          </ol>
+          <textarea id="bm-code" readonly style="width:100%; height:82px;
+            font:12px/1.4 Consolas,monospace; border:1px solid var(--line); border-radius:6px; padding:8px; background:var(--code-bg); color:var(--ink);"></textarea>
+        </div>
+      </div>
+      <p class="hint" style="margin:8px 0 0">팝업이 막히면 견적서 파일로 받아, <b>품의자/원인행위 탭의 파일 올리기 칸</b>에 올려도 동일합니다.</p>
+    </div>
+
+    <h3>Gemini 품명 정리 (선택)</h3>
+    <p>본인 Gemini API 키를 <b>품의자/원인행위 탭의 API 키 칸</b>에 넣으면 품명·규격을 더 깔끔하게 다듬습니다. 키는 이 브라우저에서 구글로 직접 전송되며 서버를 거치지 않습니다. 비워 두면 규칙 기반으로만 정리합니다.
+       <a class="ghost" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">키 발급 →</a></p>
+
+    <h3>에듀파인 본문 문구</h3>
+    <p>변환이 끝나면 결과 아래에 <b>품의(또는 지출원인행위) 본문</b>이 만들어집니다. 그대로 복사해 에듀파인 본문에 붙여넣으세요.</p>
+    <ul>
+      <li><b>자동</b> — 건수·수량, 소요예산과 <b>한글 금액</b>(금일십일만구천칠백원)</li>
+      <li><b>반자동</b> — 물품 성격(사무용품·실험 물품·청소용품 …)은 품명에서 추정해 미리 채웁니다. 틀리면 바꾸면 됩니다.</li>
+      <li><b>골라 쓰기</b> — 구입품목 요약은 <b>「○○○ 외 8종(총 31점)」</b> 처럼 품목 하나를 대표로 세웁니다.
+          기본값은 금액이 가장 큰 품목이고, 칸의 ▾ 를 누르면 <b>담긴 품명이 쭉 나오니</b> 대표로 쓸 것을 고르면 됩니다.
+          어느 품목이 대표다운지는 산 사람이 제일 잘 알기 때문입니다. 옆의 <b>표현</b>으로 「○○○ 등 9종」 꼴로 바꿀 수도 있습니다.</li>
+      <li><b>직접 입력</b> — <b>사용처(부서·교실)</b>만 견적서에 없는 정보라 채워야 합니다.
+          한 번 넣으면 이 브라우저가 기억해 다음 품의부터는 그대로 나옵니다.</li>
+    </ul>
+    <p><b>필요한 항목만 넣으면 됩니다.</b> 관련·예산과목·계약상대자 같은 항목은 처음엔 꺼져 있고, 칸에 쓰면 그때 본문에 줄이 생깁니다.
+       반대로 체크를 끄거나 칸을 비우면 그 줄은 사라지고 <code>1. 2.</code> · <code>가. 나. 다.</code> 번호가 다시 매겨집니다.
+       간단한 물품은 품목·금액만 남긴 짧은 품의로 쓰고, 갖춰야 할 품의는 항목을 켜서 쓰면 됩니다.</p>
+    <p>사용처를 비우면 임의로 지어내지 않고 <code>○○○○</code>로 남기며, 복사 버튼 옆에 몇 곳인지 표시합니다.
+       학교 결재 문투가 다르면 <b>[서식 편집]</b>에서 고쳐 두면 그 서식이 저장되어 계속 쓰입니다.</p>
+
+    <h3>내려받는 파일</h3>
+    <ul>
+      <li><b>품의자</b> · 에듀파인 품의용(품목내역) + 행정실 넘기기용(비고에 원본 장바구니 품명·판매자 → 같은 상품 다시 담기 쉬움)</li>
+      <li><b>원인행위</b> · 에듀파인 물품내역 + 검토용 보고서(요약·원문대조)</li>
+    </ul>
+
+    <h3>안전한가요?</h3>
+    <p>파일 분석과 엑셀 생성은 모두 <b>사용자 브라우저 안(WebAssembly)</b>에서 이뤄집니다. 견적서 파일과 API 키는 외부 서버로 전송·저장되지 않습니다.
+       정리된 품명·규격은 가독성을 위해 재작성된 값이므로, 공문서 반영 전 검토용 보고서의 <b>원문대조</b>로 확인하시길 권합니다.</p>
+  </div>
+</div>
+
+<footer class="gov-footer">
+  <p class="contact">🛠 오류나 개선 의견이 있으면 <b>이리고등학교 한성준</b>에게 업무 쪽지 또는 연락 부탁드립니다.</p>
+  <b>개인정보 및 처리 안내</b> · 모든 파일 분석과 엑셀 생성은 사용자 브라우저(WebAssembly) 내에서 수행되며, 견적서 파일과 API 키는 외부 서버로 전송·저장되지 않습니다. Gemini 품명 정리를 사용하는 경우에 한해, 품명·규격 텍스트가 사용자의 키로 Google API에 직접 전송됩니다.<br>
+  정리된 품명·규격은 가독성을 위해 재작성된 값이므로, 공문서 반영 전 <b>원문대조</b> 시트로 확인하시기 바랍니다.
+</footer>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.28.3/full/pyodide.js"></script>
+<script>
+const PYODIDE_INDEX = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/";
+let pyodide = null;
+// pyodide 변수는 런타임이 뜨자마자 채워지지만, convert() 는 그로부터 몇 단계 뒤
+// converter.py 를 실행해야 정의된다. 그 사이에 파일을 넣으면 [변환하기] 가 열려
+// NameError 가 났다. 준비 완료를 이 플래그로 따로 표시한다.
+let pyReady = false;
+let files = [];            // [{name, bytes(Uint8Array)}]
+let lastResult = null;
+
+const $ = (id) => document.getElementById(id);
+const statusEl = $("status"), runBtn = $("run");
+const progressWrap = $("progress"), progressBar = $("progressBar");
+
+function setStatus(text, busy) {
+  statusEl.innerHTML = (busy ? '<span class="spinner"></span>' : "") + text;
+}
+// 파이썬 refine 진행률 콜백. total 이 0/없으면 진행바를 숨긴다.
+// note 가 오면(재시도 대기 등) 그 문구를 상태줄에 그대로 보여준다.
+function updateProgress(done, total, note) {
+  if (!total) { progressWrap.classList.add("hidden"); return; }
+  progressWrap.classList.remove("hidden");
+  const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+  progressBar.style.width = pct + "%";
+  setStatus(note ? note : `Gemini 품명 정리 중… ${done}/${total} (${pct}%)`, true);
+}
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+// ---------- 파일 선택/드롭 ----------
+const drop = $("drop"), fileInput = $("file");
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("hover"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("hover"));
+drop.addEventListener("drop", (e) => {
+  e.preventDefault(); drop.classList.remove("hover");
+  addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener("change", () => addFiles(fileInput.files));
+
+async function addFiles(fileList) {
+  for (const f of fileList) {
+    const buf = new Uint8Array(await f.arrayBuffer());
+    files.push({ name: f.name, bytes: buf });
+  }
+  renderFiles();
+}
+function renderFiles() {
+  const ul = $("filelist"); ul.innerHTML = "";
+  files.forEach((f, i) => {
+    const li = document.createElement("li");
+    li.textContent = "📄 " + f.name + "  (" + (f.bytes.length / 1024).toFixed(0) + " KB)";
+    const rm = document.createElement("span");
+    rm.className = "rm"; rm.textContent = "✕ 제거";
+    rm.onclick = () => { files.splice(i, 1); renderFiles(); };
+    li.appendChild(rm); ul.appendChild(li);
+  });
+  updateRunState();
+}
+function updateRunState() {
+  runBtn.disabled = !(pyReady && files.length > 0);
+}
+
+// ---------- 키 기억 ----------
+const keyInput = $("key"), rememberChk = $("remember");
+const savedKey = localStorage.getItem("gemini_key");
+if (savedKey) { keyInput.value = savedKey; rememberChk.checked = true; }
+rememberChk.addEventListener("change", () => {
+  if (!rememberChk.checked) localStorage.removeItem("gemini_key");
+  else if (keyInput.value.trim()) localStorage.setItem("gemini_key", keyInput.value.trim());
+});
+keyInput.addEventListener("input", () => {
+  if (rememberChk.checked) localStorage.setItem("gemini_key", keyInput.value.trim());
+});
+
+// ---------- 모델/thinking 선택 (선택값 기억) ----------
+const modelSel = $("model"), thinkingSel = $("thinking");
+const savedModel = localStorage.getItem("gemini_model");
+const savedThinking = localStorage.getItem("gemini_thinking");
+if (savedModel !== null) modelSel.value = savedModel;
+if (savedThinking !== null) thinkingSel.value = savedThinking;
+modelSel.addEventListener("change", () => localStorage.setItem("gemini_model", modelSel.value));
+thinkingSel.addEventListener("change", () => localStorage.setItem("gemini_thinking", thinkingSel.value));
+
+// ---------- Pyodide 초기화 ----------
+async function initPyodide() {
+  setStatus("파이썬 런타임 로드 중…", true);
+  pyodide = await loadPyodide({ indexURL: PYODIDE_INDEX });
+  setStatus("필수 패키지 로드 중… (lxml / Pillow / 암호화)", true);
+  await pyodide.loadPackage(["micropip", "lxml", "Pillow", "cryptography"]);
+  setStatus("파이썬 패키지 설치 중… (bs4 / openpyxl / pdfplumber)", true);
+  await pyodide.runPythonAsync(`
+import micropip
+await micropip.install(["beautifulsoup4", "openpyxl", "pdfminer.six"])
+await micropip.install("pdfplumber", deps=False)   # pypdfium2(네이티브) 건너뜀
+`);
+  setStatus("변환기 로드 중…", true);
+  const src = await (await fetch("converter.py")).text();
+  await pyodide.runPythonAsync(src);
+  pyReady = true;
+  setStatus("준비 완료. 파일을 넣고 [변환하기]를 누르세요.", false);
+  updateRunState();
+}
+
+// ---------- 변환 실행 ----------
+runBtn.addEventListener("click", async () => {
+  if (!pyReady || files.length === 0) return;
+  runBtn.disabled = true;
+  const key = keyInput.value.trim();
+  const useGemini = key.length > 0;
+  setStatus(useGemini ? "견적서 분석 + Gemini 품명 정리 중…" : "견적서 분석 중…", true);
+
+  try {
+    const jsFiles = files.map((f) => [f.name, f.bytes]);
+    pyodide.globals.set("JS_FILES", pyodide.toPy(jsFiles));
+    pyodide.globals.set("JS_KEY", key);
+    pyodide.globals.set("JS_USE_GEMINI", useGemini);
+    pyodide.globals.set("JS_PROGRESS", updateProgress);
+    pyodide.globals.set("JS_MODEL", modelSel.value);
+    pyodide.globals.set("JS_THINKING", thinkingSel.value);
+    const pyRes = await pyodide.runPythonAsync(
+      "await convert(JS_FILES, JS_KEY, JS_USE_GEMINI, JS_PROGRESS, JS_MODEL, JS_THINKING)"
+    );
+    const res = pyRes.toJs({ dict_converter: Object.fromEntries });
+    pyRes.destroy();
+    lastResult = res;
+    renderResults(res);
+    setStatus(res.refine_msg || "완료.", false);
+  } catch (e) {
+    setStatus("오류: " + e.message, false);
+    console.error(e);
+  } finally {
+    updateProgress(0, 0);   // 진행바 숨김
+    runBtn.disabled = false;
+  }
+});
+
+function won(n) { return Number(n).toLocaleString("ko-KR") + "원"; }
+
+function renderResults(res) {
+  $("results").classList.remove("hidden");
+
+  // 요약 표
+  let html = '<table><thead><tr><th class="l">몰</th><th class="l">파일</th><th>항목</th><th>상품금액</th><th>배송비</th><th>합계</th><th>검증</th></tr></thead><tbody>';
+  for (const s of res.summary) {
+    html += `<tr><td class="l">${s.mall}</td><td class="l">${s.source}</td><td>${s.items}</td>`
+      + `<td>${won(s.goods)}</td><td>${won(s.shipping)}</td><td>${won(s.total)}</td>`
+      + `<td class="${s.ok ? "ok" : "bad"}">${s.ok ? "일치" : "불일치"}</td></tr>`;
+  }
+  html += "</tbody></table>";
+  $("summary").innerHTML = html;
+
+  $("report").textContent = res.report;
+
+  const errBox = $("errors");
+  if (res.errors && res.errors.length) {
+    errBox.className = "err";
+    errBox.innerHTML = "<b>읽지 못한 파일 / 알림</b><br>" + res.errors.join("<br>");
+  } else {
+    errBox.className = ""; errBox.innerHTML = "";
+  }
+  $("download").disabled = !res.xlsx;
+  $("download-edufine").disabled = !res.edufine;
+  $("download-pumui").disabled = !res.edufine_pumui;
+  $("download-handoff").disabled = !res.handoff;
+
+  bonInit(res);
+}
+
+function downloadBytes(bytes, prefix) {
+  const blob = new Blob([bytes], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const fname = `${prefix}_${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.xlsx`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------- 에듀파인 본문 문구 ----------
+// 원칙: 견적서에서 나오는 것(품목·수량·금액)만 자동으로 채운다.
+// 견적서에 없는 것(사용처·예산과목·근거·계약상대자)은 지어내지 않고 ○ 자리표시로 남긴다.
+// 그대로 공문에 올라가는 글이라, 그럴듯한 추측이 사실처럼 박히는 게 제일 위험하다.
+// 대신 사용처는 사람마다 거의 고정값이라 localStorage 에 기억해 두 번째부터는 손댈 일이 없게 한다.
+
+const BON_KEY = "bonmun_v1";
+const BON_MARK = "○○○○";
+
+// 품명·규격 키워드 → 물품 성격. 겹치는 낱말은 가장 좁은 쪽에만 둔다(변별력을 위해).
+// 부분일치라 '책'처럼 다른 말에 묻히는 짧은 낱말은 넣지 않는다(책상·책꽂이가 도서로 잡힌다).
+const BON_KINDS = [
+  ["사무용품", ["볼펜", "네임펜", "형광펜", "유성펜", "보드마카", "수정테이프", "지우개", "연필", "샤프",
+    "a4", "복사용지", "클리어파일", "바인더", "스테이플", "호치키스", "스템플러", "집게", "가위",
+    "딱풀", "물풀", "고체풀", "테이프", "포스트잇", "점착메모", "봉투", "결재판", "스탬프", "잉크",
+    "토너", "라벨", "계산기", "명찰", "인덱스", "커터", "서류", "문서", "우편", "노트", "메모지"]],
+  ["실험 물품", ["비커", "플라스크", "시험관", "스포이드", "스포이트", "알코올램프", "알콜램프", "삼발이",
+    "페트리", "현미경", "시약", "리트머스", "도가니", "슬라이드글라스", "거름종이", "실험", "표본",
+    "배양", "증류수", "염화", "황산", "수산화", "검류계", "실린더", "유리막대", "약숟가락", "온도계", "핀셋"]],
+  ["청소·위생 물품", ["세제", "락스", "밀대", "대걸레", "걸레", "빗자루", "쓰레받기", "종량제", "쓰레기봉투",
+    "화장지", "두루마리", "물티슈", "손소독", "마스크", "고무장갑", "방향제", "청소", "수세미", "탈취"]],
+  ["보건 물품", ["밴드", "반창고", "붕대", "거즈", "체온계", "파스", "압박", "부목", "핫팩", "냉찜질",
+    "알콜솜", "알코올솜", "소독약", "상비약", "응급", "의료", "구급"]],
+  ["미술·만들기 재료", ["물감", "팔레트", "도화지", "색종이", "크레파스", "색연필", "사인펜", "점토",
+    "클레이", "글루건", "글루스틱", "아크릴판", "우드락", "폼보드", "스케치북", "켄트지", "하드보드",
+    "만들기", "공예", "비즈", "펠트지", "털실", "붓세트"]],
+  ["체육 물품", ["축구공", "농구공", "배구공", "피구공", "줄넘기", "라바콘", "라켓", "셔틀콕", "티볼",
+    "매트", "호루라기", "훌라후프", "접시콘", "체육", "배드민턴", "탁구", "스포츠"]],
+  ["음악 물품", ["리코더", "실로폰", "캐스터네츠", "탬버린", "우쿨렐레", "멜로디언", "단소", "소고",
+    "장구", "악보", "보면대", "건반"]],
+  ["정보·전산 소모품", ["마우스", "키보드", "hdmi", "usb", "랜케이블", "랜선", "멀티탭", "어댑터",
+    "충전기", "젠더", "sd카드", "웹캠", "공유기", "프린터", "케이블", "건전지", "배터리", "모니터",
+    "노트북", "태블릿", "스피커", "헤드셋", "리모컨"]],
+  ["도서", ["도서", "문고", "전집", "그림책", "동화책", "학습만화", "위인전"]],
+  ["급식·조리 물품", ["위생모", "앞치마", "조리", "국자", "식판", "주방", "뒤집개", "계량컵",
+    "위생장갑", "급식", "도마"]],
+  ["교구·학습 준비물", ["교구", "워크북", "학습지", "준비물", "화이트보드", "실습", "키트", "블록",
+    "코딩", "보드게임", "학습교구", "자석칠판"]],
+  ["행사 물품", ["현수막", "상장", "트로피", "메달", "리본", "풍선", "시상", "액자", "명패"]],
+  ["비품", ["의자", "책상", "서랍장", "캐비닛", "수납장", "선반", "정리함", "파티션", "게시판", "사물함"]],
+];
+
+// 물품 성격에서 자연스럽게 따라오는 사용처. 어디까지나 '제안'이라 칩으로만 띄우고
+// 자동으로 채우지는 않는다. (행정실이 과학 교구를 살 수도 있다.)
+const BON_DEPT_SUGGEST = {
+  "실험 물품": "과학실", "보건 물품": "보건실", "급식·조리 물품": "급식실",
+  "도서": "도서실", "사무용품": "행정실", "청소·위생 물품": "행정실",
+  "정보·전산 소모품": "교무실", "음악 물품": "음악실", "미술·만들기 재료": "미술실",
+  "체육 물품": "체육관",
+};
+
+// 서식에서 '#.' 은 1.2.3. , '@.' 은 가.나.다. 로 자동으로 매겨진다.
+// 값이 빈 항목은 줄째로 빠지고 번호는 다시 매겨지므로, 서식에 미리 다 적어 둬도 된다.
+const BON_TPL_TEACHER =
+`#. 관련: {관련}
+
+#. {사용처} {물품군} 구입을 위하여 아래와 같이 품의합니다.
+
+  @. 목    적: {목적}
+  @. 구입품목: {품목요약}
+  @. 구입처: {구입처}
+  @. 소요예산: 금 {금액}원({금액한글})
+  @. 예산과목: {예산과목}
+
+붙임  품목내역 1부.  끝.`;
+
+const BON_TPL_ADMIN =
+`#. 관련: {관련}
+
+#. {사용처} {물품군} 구입에 따른 지출원인행위를 아래와 같이 하고자 합니다.
+
+  @. 목    적: {목적}
+  @. 구입품목: {품목요약}
+  @. 계약상대자: {계약상대자}
+  @. 계약방법: {계약방법}
+  @. 계약금액: 금 {금액}원({금액한글})
+  @. 예산과목: {예산과목}
+
+붙임  물품내역 1부.  끝.`;
+
+// 켜고 끌 수 있는 항목. 서식에 그 치환자가 있을 때만 화면에 줄이 뜬다.
+// 서식을 고쳐 {관련} 을 지우면 관련 칸도 같이 사라진다.
+const BON_OPTS = [
+  ["목적", "(비우면 사용처·물품 성격으로 자동 작성)", true, ""],
+  ["관련", "예: 2026학년도 과학과 교육과정 운영 계획", false, ""],
+  ["구입처", "예: 온라인 오픈마켓", true, "온라인 오픈마켓"],
+  ["계약상대자", "예: ○○문구사", false, ""],
+  ["계약방법", "예: 수의계약(소액)", false, ""],
+  ["예산과목", "예: 교수학습활동지원-과학과 운영", false, ""],
+];
+
+function bonStore() {
+  try { return JSON.parse(localStorage.getItem(BON_KEY)) || {}; } catch { return {}; }
+}
+function bonSave(patch) {
+  const s = Object.assign(bonStore(), patch);
+  try { localStorage.setItem(BON_KEY, JSON.stringify(s)); } catch {}
+}
+// 최근 쓴 값을 앞으로 당겨 최대 5개까지 기억한다.
+function bonRemember(field, value) {
+  value = (value || "").trim();
+  if (!value) return;
+  const key = field + "Recent";
+  const list = [value].concat((bonStore()[key] || []).filter((v) => v !== value)).slice(0, 5);
+  bonSave({ [key]: list, [field]: value });
+}
+
+// 금액을 회계 관행대로 적는다. 위·변조를 막으려고 1도 '일'로 적는다(일천오백삼십원).
+function bonHangulAmount(n) {
+  n = Math.round(Number(n) || 0);
+  if (n <= 0) return "금영원";
+  const D = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구"];
+  const U = ["", "십", "백", "천"];
+  const B = ["", "만", "억", "조", "경"];
+  let out = "", g = 0;
+  while (n > 0 && g < B.length) {
+    const part = n % 10000;
+    n = Math.floor(n / 10000);
+    if (part) {
+      let s = "";
+      for (let i = 0; i < 4; i++) {
+        const d = Math.floor(part / Math.pow(10, i)) % 10;
+        if (d) s = D[d] + U[i] + s;
+      }
+      out = s + B[g] + out;
+    }
+    g++;
+  }
+  return "금" + out + "원";
+}
+
+// 변환 결과의 TSV 에서 품목만 뽑는다(배송비 행 제외). 열: 품명·규격·단가·수량·금액·비고(판매자)
+function bonItems(res) {
+  const out = [];
+  for (const line of String(res.tsv || "").split("\n").slice(1)) {
+    if (!line.trim()) continue;
+    const c = line.split("\t");
+    if (/배송비$/.test(c[0] || "")) continue;
+    out.push({
+      name: c[0] || "", spec: c[1] || "",
+      qty: Number(c[3]) || 0, amount: Number(c[4]) || 0, seller: c[5] || "",
+    });
+  }
+  return out;
+}
+
+// 품목 하나가 여러 성격에 걸려도 한 번만 센다. 한 건도 안 걸리면 무난한 '물품'으로 둔다.
+function bonInferKind(items) {
+  const score = new Map();
+  for (const it of items) {
+    const hay = (it.name + " " + it.spec).toLowerCase();
+    for (const [kind, words] of BON_KINDS) {
+      if (words.some((w) => hay.includes(w))) score.set(kind, (score.get(kind) || 0) + 1);
+    }
+  }
+  const ranked = [...score.entries()].sort((a, b) => b[1] - a[1]);
+  return {
+    kind: ranked.length ? ranked[0][0] : "물품",
+    hits: ranked.length ? ranked[0][1] : 0,
+    total: items.length, ranked,
+  };
+}
+
+// 구입품목 요약. 물품군으로 묶어 버리면 실제로 산 물건이 안 보이므로,
+// 품명 하나를 대표로 세운다. 어느 품목이 대표다운지는 사람이 아는 일이라
+// 드롭다운에 품명을 전부 늘어놓고 고르게 한다.
+// 품명은 자르지 않는다. 공문 본문에 말줄임표가 남는 것보다 다른 품목을 고르는 편이 낫다.
+const BON_FORMS = {
+  "외": (name, n, qty) => (n > 1 ? `${name} 외 ${n - 1}종 (총 ${qty}점)` : `${name} ${qty}점`),
+  "등": (name, n, qty) => (n > 1 ? `${name} 등 ${n}종` : `${name} ${qty}점`),
+};
+
+// 드롭다운에 세울 품명. 금액이 가장 큰 품목을 앞에 놓고(= 기본값), 견적서 첫 품목,
+// 그 다음은 견적서 순서 그대로다. 같은 상품이 옵션별로 여러 줄인 경우가 흔해서
+// 품명 기준으로 중복을 지운다.
+function bonSummaryNames(items) {
+  if (!items.length) return [];
+  const top = items.reduce((a, b) => (b.amount > a.amount ? b : a), items[0]);
+  const order = [top.name, items[0].name, ...items.map((it) => it.name)];
+  return [...new Set(order.map((s) => (s || "").trim()).filter(Boolean))];
+}
+
+// '종' 은 품목내역 행 수로 센다. 붙임으로 나가는 서식의 줄 수와 맞아야 대조가 된다.
+function bonSummaryOptions(form) {
+  if (!bonData) return [];
+  const n = bonData.items.length, qty = bonData.qty;
+  const f = BON_FORMS[form] || BON_FORMS["외"];
+  return [
+    ...bonData.summaryNames.map((name) => f(name, n, qty)),
+    n > 1 ? `총 ${n}종 ${qty}점` : `${qty}점`,
+  ];
+}
+
+let bonData = null;   // 변환 결과에서 뽑아 둔 자동 채움값
+
+function bonBuildData(res) {
+  const items = bonItems(res);
+  const qty = items.reduce((a, b) => a + b.qty, 0);
+  const total = (res.summary || []).reduce((a, s) => a + Number(s.total || 0), 0);
+  const infer = bonInferKind(items);
+
+  // 몰 이름. 11번가는 옥션 형식을 빌려 오므로 판매자 앞의 '11st' 로만 알아볼 수 있다.
+  // 빠뜨리지 않게 덧붙이되, 옥션이 함께 남을 수 있다는 점은 서식 편집 안내에 적어 뒀다.
+  const malls = [...new Set((res.summary || []).map((s) => s.mall).filter(Boolean))];
+  if (items.some((it) => /^11st\b/.test(it.seller)) && !malls.includes("11번가")) malls.push("11번가");
+
+  const now = new Date();
+  return {
+    items, qty, total, infer,
+    summaryNames: bonSummaryNames(items),
+    malls: malls.join(", ") || BON_MARK,
+    today: `${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}.`,
+  };
+}
+
+function bonTplDefault() { return audience === "admin" ? BON_TPL_ADMIN : BON_TPL_TEACHER; }
+function bonTplKey() { return audience === "admin" ? "tplAdmin" : "tplTeacher"; }
+
+function bonRenderChips() {
+  const box = $("bon-chips");
+  const recent = bonStore().deptRecent || [];
+  const sug = bonData ? BON_DEPT_SUGGEST[$("bon-kind").value.trim()] : null;
+  const list = recent.slice();
+  if (sug && !list.includes(sug)) list.push(sug);
+  if (!list.length) { box.innerHTML = ""; return; }
+  box.innerHTML = "<span>자주 쓰는 사용처:</span>" + list.map((v) =>
+    `<button type="button" class="chip${recent.includes(v) ? "" : " sug"}" data-dept="${v}">${v}</button>`
+  ).join("");
+  for (const b of box.querySelectorAll(".chip")) {
+    b.addEventListener("click", () => {
+      $("bon-dept").value = b.dataset.dept;
+      bonRemember("dept", b.dataset.dept);
+      bonRender();
+    });
+  }
+}
+
+// 선택 항목의 현재 상태. {목적:{v:"",on:true}, …} — 화면을 다시 그려도 여기서 되살린다.
+let bonFields = {};
+
+// 서식에 실제로 쓰인 치환자만 화면에 줄로 띄운다.
+function bonActiveOpts() {
+  const tpl = $("bon-tpl").value;
+  return BON_OPTS.filter(([name]) => tpl.includes("{" + name + "}"));
+}
+
+function bonBuildOpts() {
+  const box = $("bon-opts");
+  box.innerHTML = bonActiveOpts().map(([name, ph]) => {
+    const f = bonFields[name] || { v: "", on: false };
+    return `<div class="opt-row${f.on ? "" : " off"}" data-row="${name}">`
+      + `<label class="opt-tick"><input type="checkbox" data-f="${name}"${f.on ? " checked" : ""}><span>${name}</span></label>`
+      + `<input type="text" data-f="${name}" placeholder="${ph}" autocomplete="off"></div>`;
+  }).join("");
+
+  for (const el of box.querySelectorAll('input[type="text"]')) {
+    el.value = (bonFields[el.dataset.f] || {}).v || "";
+    el.addEventListener("input", () => {
+      const name = el.dataset.f, val = el.value;
+      bonFields[name].v = val;
+      // 쓰는 순간 항목이 켜지고, 지우면 다시 꺼진다.
+      // 목적만은 비어도 자동 문구가 들어가므로 끄지 않는다.
+      if (val.trim()) bonFields[name].on = true;
+      else if (name !== "목적") bonFields[name].on = false;
+      box.querySelector(`.opt-row[data-row="${name}"]`).classList.toggle("off", !bonFields[name].on);
+      box.querySelector(`input[type="checkbox"][data-f="${name}"]`).checked = bonFields[name].on;
+      bonPersistFields();
+      bonRender();
+    });
+  }
+  for (const el of box.querySelectorAll('input[type="checkbox"]')) {
+    el.addEventListener("change", () => {
+      const name = el.dataset.f;
+      bonFields[name].on = el.checked;
+      box.querySelector(`.opt-row[data-row="${name}"]`).classList.toggle("off", !el.checked);
+      bonPersistFields();
+      bonRender();
+    });
+  }
+}
+
+function bonPersistFields() {
+  bonSave({ fields: bonFields });
+  if (bonFields["예산과목"] && bonFields["예산과목"].v.trim()) bonRemember("budget", bonFields["예산과목"].v);
+}
+
+// 공문서 항목 기호는 바깥에서부터 1. → 가. → 1) → 가) 순이다.
+const BON_LEVEL_STYLE = [
+  (n) => `${n}. `,
+  (n) => `${"가나다라마바사아자차카타파하"[(n - 1) % 14]}. `,
+  (n) => `${n}) `,
+  (n) => `${"가나다라마바사아자차카타파하"[(n - 1) % 14]}) `,
+];
+
+// 값이 빈 항목은 줄째로 지우고, 남은 것만으로 항목 기호를 다시 매긴다.
+//
+// 공문서 작성 규칙대로 '항목이 하나뿐이면 항목 구분을 생략'하는데, 그러면 1단계가
+// 통째로 사라지면서 2단계가 가장 바깥 단계가 된다. 이때 기호는 '가.나.다.' 가 아니라
+// '1.2.3.' 으로 올라가야 하고 들여쓰기도 한 칸 당겨져야 한다.
+// 그래서 들여쓰기를 서식에 글자로 두지 않고 여기서 단계에 맞춰 계산한다.
+// (서식 안의 들여쓰기는 읽기 좋으라고 둔 것이라 무시한다.)
+function bonLayout(text, empties) {
+  const kept = text.split("\n").filter((line) => {
+    const found = line.match(/\{[^}]+\}/g);
+    if (!found) return true;
+    return !found.every((p) => empties.has(p.slice(1, -1)));
+  });
+
+  const depth = kept.map((l) => (/^\s*#\./.test(l) ? 1 : /^\s*@\./.test(l) ? 2 : 0));
+
+  // 2단계는 바로 위 1단계 묶음 단위로 다시 센다.
+  let g = -1;
+  const group = depth.map((d) => { if (d === 1) g++; return g; });
+  const subs = {};
+  depth.forEach((d, i) => { if (d === 2) subs[group[i]] = (subs[group[i]] || 0) + 1; });
+
+  const topNumbered = depth.filter((d) => d === 1).length > 1;
+  const styleOf = { 1: 0, 2: topNumbered ? 1 : 0 };   // 1단계가 없으면 2단계가 승격한다
+
+  let t = 0; const s = {};
+  return kept.map((l, i) => {
+    const d = depth[i];
+    if (!d) return l;
+    const body = l.replace(/^\s*[#@]\.\s*/, "");
+    const si = styleOf[d];
+    let n, numbered;
+    if (d === 1) { n = ++t; numbered = topNumbered; }
+    else { const k = group[i]; n = s[k] = (s[k] || 0) + 1; numbered = subs[k] > 1; }
+    return "  ".repeat(si) + (numbered ? BON_LEVEL_STYLE[si](n) : "") + body;
+  }).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function bonRender() {
+  if (!bonData) return;
+  const dept = $("bon-dept").value.trim();
+  const kind = $("bon-kind").value.trim() || "물품";
+  const D = dept || BON_MARK;
+
+  // 자동 치환자는 늘 값이 있고, 선택 항목은 꺼져 있으면 '빈 값'으로 쳐서 줄이 빠진다.
+  const vals = {
+    "사용처": D, "물품군": kind,
+    "품목요약": $("bon-summary").value.trim(),   // 비우면 구입품목 줄이 빠진다
+    "건수": String(bonData.items.length), "수량": String(bonData.qty),
+    "금액": Number(bonData.total).toLocaleString("ko-KR"),
+    "금액한글": bonHangulAmount(bonData.total),
+    "오늘": bonData.today,
+  };
+  const empties = new Set();
+  if (!dept) empties.add("사용처");   // ○○ 로 남지만, 그 줄만 있는 항목이면 빠지게 한다
+
+  for (const [name] of BON_OPTS) {
+    const f = bonFields[name] || { v: "", on: false };
+    let v = f.on ? f.v.trim() : "";
+    if (name === "목적" && f.on && !v) v = `${D} 운영에 필요한 ${kind} 구입`;
+    if (name === "구입처" && f.on && !v) v = bonData.malls;
+    vals[name] = v;
+    if (!v) empties.add(name);
+  }
+
+  for (const [k, v] of Object.entries(vals)) if (!v) empties.add(k);
+
+  // 줄 삭제·번호 매기기가 먼저다. 치환을 먼저 하면 어느 줄이 비었는지 알 수 없다.
+  let text = bonLayout($("bon-tpl").value, empties);
+  for (const [k, v] of Object.entries(vals)) text = text.split("{" + k + "}").join(v);
+  $("bon-out").dataset.text = text;
+
+  const esc = text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  $("bon-out").innerHTML = esc.split(BON_MARK).join(`<mark>${BON_MARK}</mark>`);
+
+  const holes = text.split(BON_MARK).length - 1;
+  const warn = $("bon-warn");
+  warn.textContent = holes ? `채워야 할 자리 ${holes}곳 (${BON_MARK} 표시)` : "빈 자리 없음 — 그대로 붙여넣어도 됩니다";
+  warn.classList.toggle("done", holes === 0);
+  bonRenderChips();
+}
+
+function bonInit(res) {
+  bonData = bonBuildData(res);
+
+  // 읽힌 품목이 하나도 없으면(파일을 못 읽었거나 빈 견적서) 만들 본문이 없다.
+  // 이때 카드를 띄우면 '금 0원(금영원)' 짜리 품의가 복사 가능한 채로 남는다.
+  if (!bonData.items.length) {
+    bonData = null;
+    $("bonmun-card").classList.add("hidden");
+    return;
+  }
+
+  const st = bonStore();
+
+  $("bon-dept").value = st.dept || "";
+
+  // 물품 성격만 자동으로 채운다. 품명에서 나온 값이라 근거가 있고, 틀려도 눈에 바로 띈다.
+  $("bon-kind").value = bonData.infer.kind;
+  $("bon-kind-note").textContent = bonData.infer.hits
+    ? `— 품명 ${bonData.infer.hits}/${bonData.infer.total}건에서 추정, 바꿔도 됩니다`
+    : "— 품명으로 판단이 안 돼 기본값입니다";
+  $("bon-kind-list").innerHTML = BON_KINDS.map(([k]) => `<option value="${k}"></option>`).join("");
+
+  // 요약은 장바구니마다 달라지는 값이라 기억하지 않고 변환할 때마다 새로 만든다.
+  bonRefreshSummaries(true);
+
+  // 처음에는 가장 간단한 서식(목적·구입처만)으로 두고, 쓴 적 있는 항목은 되살린다.
+  const saved = st.fields || {};
+  bonFields = {};
+  for (const [name, , on, def] of BON_OPTS) {
+    bonFields[name] = saved[name] ? { v: saved[name].v || "", on: !!saved[name].on } : { v: def, on };
+  }
+
+  $("bon-tpl").value = st[bonTplKey()] || bonTplDefault();
+  $("bonmun-card").classList.remove("hidden");
+  bonBuildOpts();
+  bonRender();
+}
+
+// 탭(품의자/원인행위)을 바꾸면 서식이 달라진다. 사용자가 고친 서식이 있으면 그걸 살린다.
+function bonSyncAudience() {
+  if (!bonData) return;
+  $("bon-tpl").value = bonStore()[bonTplKey()] || bonTplDefault();
+  bonBuildOpts();
+  bonRender();
+}
+
+// 물품 성격을 바꾸면 '○○ 등 N종' 후보도 따라가야 한다. 다만 사용자가 요약을 직접
+// 손댔거나 다른 후보를 고른 뒤라면 그 선택을 덮어쓰지 않는다.
+
+function bonRefreshSummaries(force) {
+  if (!bonData) return;
+  const list = bonSummaryOptions($("bon-summary-form").value);
+  bonData.summaries = list;
+  $("bon-summary-list").innerHTML = list
+    .map((s) => `<option value="${s.replace(/"/g, "&quot;")}"></option>`).join("");
+  if (force) $("bon-summary").value = list[0];
+}
+
+$("bon-dept").addEventListener("input", bonRender);
+$("bon-kind").addEventListener("input", bonRender);
+$("bon-summary").addEventListener("input", bonRender);
+
+// 표현을 바꿔도 고른 품목은 유지한다. 목록의 순서가 같으므로 같은 자리로 옮겨 준다.
+$("bon-summary-form").addEventListener("change", () => {
+  const at = (bonData ? bonData.summaries : []).indexOf($("bon-summary").value);
+  bonRefreshSummaries(false);
+  if (at >= 0) $("bon-summary").value = bonData.summaries[at];
+  bonRender();
+});
+$("bon-dept").addEventListener("change", () => bonRemember("dept", $("bon-dept").value));
+$("bon-tpl").addEventListener("input", () => {
+  bonSave({ [bonTplKey()]: $("bon-tpl").value });
+  bonBuildOpts();     // 서식에서 치환자를 넣거나 빼면 항목 줄도 따라 생기고 사라진다
+  bonRender();
+});
+$("bon-tpl-toggle").addEventListener("click", () => {
+  $("bon-tpl-box").classList.toggle("hidden");
+});
+$("bon-tpl-reset").addEventListener("click", (e) => {
+  e.preventDefault();
+  $("bon-tpl").value = bonTplDefault();
+  bonSave({ [bonTplKey()]: null });
+  bonBuildOpts();
+  bonRender();
+  toast("기본 서식으로 되돌렸습니다");
+});
+$("bon-copy").addEventListener("click", async () => {
+  const text = $("bon-out").dataset.text || "";
+  if (!text) return;
+  bonRemember("dept", $("bon-dept").value);
+  bonPersistFields();
+  try {
+    await navigator.clipboard.writeText(text);
+    const holes = text.split(BON_MARK).length - 1;
+    toast(holes ? `본문을 복사했습니다 — ${BON_MARK} ${holes}곳은 에듀파인에서 채우세요` : "본문을 복사했습니다");
+  } catch { toast("복사 실패 — 브라우저 권한을 확인하세요"); }
+});
+
+// ---------- 탭 전환 ----------
+// 품의자/원인행위는 입력·변환을 공유하고, 내려받기 버튼과 안내 문구만 바뀐다.
+// 사용방법 탭은 작업 화면을 숨기고 안내만 보여준다.
+let audience = "teacher";   // teacher | admin
+function showTab(tab) {
+  for (const t of ["teacher", "admin", "guide"]) {
+    $("tab-" + t).classList.toggle("active", t === tab);
+  }
+  const work = tab !== "guide";
+  $("pane-work").classList.toggle("hidden", !work);
+  $("pane-guide").classList.toggle("hidden", work);
+  if (work) {
+    audience = tab;
+    $("lead-teacher").classList.toggle("hidden", tab !== "teacher");
+    $("lead-admin").classList.toggle("hidden", tab !== "admin");
+    $("dl-teacher").classList.toggle("hidden", tab !== "teacher");
+    $("dl-admin").classList.toggle("hidden", tab !== "admin");
+    $("hint-teacher").classList.toggle("hidden", tab !== "teacher");
+    $("hint-admin").classList.toggle("hidden", tab !== "admin");
+    bonSyncAudience();
+  }
+}
+for (const t of ["teacher", "admin", "guide"]) {
+  $("tab-" + t).addEventListener("click", () => showTab(t));
+}
+
+// ---------- 사용방법 탭의 북마클릿 심기 ----------
+// 북마클릿은 별도 파일(cart-bookmarklet.txt)로 두고 여기서 불러와 href 에 꽂는다.
+// 이 파일 하나가 품의자·원인행위 공통이다. (누르면 품의자 화면으로 열림)
+(async () => {
+  try {
+    const code = (await (await fetch("cart-bookmarklet.txt")).text()).trim();
+    if (!code.startsWith("javascript:")) throw new Error("형식 오류");
+    $("bm-btn").setAttribute("href", code);
+    $("bm-code").value = code;
+    $("bm-status").textContent = "← 이 버튼을 북마크바로 드래그";
+  } catch (e) {
+    $("bm-status").textContent = "북마클릿을 불러오지 못했습니다. '코드 복사'를 이용하세요.";
+    console.error(e);
+  }
+})();
+// 드래그 대신 클릭하면 실행되는 게 아니라 안내만 (실행은 장바구니에서)
+$("bm-btn").addEventListener("click", (e) => { e.preventDefault(); toast("이 버튼은 북마크바로 '드래그'하세요. 실행은 쇼핑몰 장바구니에서."); });
+$("bm-copy").addEventListener("click", (e) => {
+  e.preventDefault();
+  const help = $("bm-copy-help");
+  const show = help.classList.contains("hidden");
+  help.classList.toggle("hidden", !show);
+  if (show) {
+    const ta = $("bm-code");
+    ta.select();
+    navigator.clipboard.writeText(ta.value)
+      .then(() => toast("코드를 복사했습니다. 새 북마크의 URL 칸에 붙여넣으세요"))
+      .catch(() => toast("복사 실패 — 아래 상자에서 직접 복사해 주세요"));
+  }
+});
+
+// ---------- 복사 / 다운로드 ----------
+async function copyTsv() {
+  if (!lastResult) return;
+  try { await navigator.clipboard.writeText(lastResult.tsv); toast("표를 클립보드에 복사했습니다. 엑셀에서 Ctrl+V"); }
+  catch { toast("복사 실패 — 브라우저 권한을 확인하세요"); }
+}
+$("copy").addEventListener("click", copyTsv);
+$("copy-teacher").addEventListener("click", copyTsv);
+
+$("download").addEventListener("click", () => {
+  if (lastResult && lastResult.xlsx) downloadBytes(lastResult.xlsx, "견적정리");
+});
+$("download-edufine").addEventListener("click", () => {
+  if (lastResult && lastResult.edufine) downloadBytes(lastResult.edufine, "물품내역");
+});
+$("download-pumui").addEventListener("click", () => {
+  if (lastResult && lastResult.edufine_pumui) downloadBytes(lastResult.edufine_pumui, "품목내역");
+});
+$("download-handoff").addEventListener("click", () => {
+  if (lastResult && lastResult.handoff) downloadBytes(lastResult.handoff, "행정실_넘기기");
+});
+
+// ---------- 장바구니 북마클릿에서 넘어온 견적서 받기 ----------
+// 주소 뒤 '#cart=...' 로 견적서가 실려 오면 파일을 올린 것과 똑같이 취급한다.
+// '#' 뒷부분은 서버로 전송되지 않으므로 브라우저 안에만 머문다.
+// 앞 한 글자가 인코딩 표시다. g=gzip, r=raw
+function b64urlToBytes(s) {
+  const b = s.replace(/-/g, "+").replace(/_/g, "/");
+  const bin = atob(b + "=".repeat((4 - (b.length % 4)) % 4));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function unpack(payload) {
+  const bytes = b64urlToBytes(payload.slice(1));
+  if (payload[0] !== "g") return bytes;
+  const ds = new DecompressionStream("gzip");
+  const w = ds.writable.getWriter();
+  w.write(bytes); w.close();
+  return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+}
+
+// 여러 몰을 누적한다. 북마클릿을 누를 때마다 이 탭(또는 새 탭)이 새로고침되며
+// 담긴 몰이 localStorage 에 쌓인다. localStorage 는 변환기 출처(origin)의 모든 탭이
+// 공유하므로, named target 재사용이 안 돼 새 탭이 열려도 누적이 이어진다.
+const CART_KEY = "cart_accum_v1";
+const CART_FRESH_MS = 45 * 60 * 1000;   // 마지막 담기로부터 45분 지나면 새 품의로 간주
+
+function bytesToB64(u8) {
+  let s = "";
+  for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+  return btoa(s);
+}
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function readAccum() {
+  try {
+    const o = JSON.parse(localStorage.getItem(CART_KEY) || "null");
+    if (!o || !Array.isArray(o.items)) return [];
+    if (Date.now() - (o.ts || 0) > CART_FRESH_MS) { localStorage.removeItem(CART_KEY); return []; }
+    return o.items;
+  } catch { return []; }
+}
+function writeAccum(items) {
+  localStorage.setItem(CART_KEY, JSON.stringify({ ts: Date.now(), items }));
+}
+function clearAccum() {
+  localStorage.removeItem(CART_KEY);
+  files = [];
+  renderFiles();
+  $("results").classList.add("hidden");
+  renderAccumBar();
+  setStatus("담은 장바구니를 비웠습니다. 새로 담아 주세요.", false);
+}
+
+// 담긴 몰을 파일 목록 위에 요약해 보여주고, 비우기 버튼을 단다.
+function renderAccumBar() {
+  const bar = $("accum-bar");
+  const items = readAccum();
+  if (!items.length) { bar.classList.add("hidden"); bar.innerHTML = ""; return; }
+  bar.classList.remove("hidden");
+  const malls = items.map((it) => it.mall || "장바구니").join(" · ");
+  bar.innerHTML = `🛒 장바구니에서 담김: <b>${malls}</b> (${items.length}개 몰) `
+    + `<a class="ghost" href="#" id="accum-clear">비우고 새로 시작</a>`;
+  $("accum-clear").addEventListener("click", (e) => { e.preventDefault(); clearAccum(); });
+}
+
+// localStorage 에 쌓인 몰들을 files 로 옮긴다(파일 업로드와 동일 취급).
+function loadAccumIntoFiles() {
+  files = readAccum().map((it) => ({ name: it.name, bytes: b64ToBytes(it.b64) }));
+  renderFiles();
+  renderAccumBar();
+}
+
+async function loadFromHash() {
+  const m = location.hash.match(/^#cart=([^&]+)(?:&mall=([^&]*))?/);
+  if (!m) { renderAccumBar(); return false; }
+  // 주소창을 정리해 새로고침 때 같은 데이터가 또 올라가지 않게 한다.
+  history.replaceState(null, "", location.pathname + location.search);
+  try {
+    const bytes = await unpack(m[1]);
+    const mall = m[2] ? decodeURIComponent(m[2]) : "장바구니";
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+
+    const items = readAccum().filter((it) => it.mall !== mall);   // 같은 몰이면 갱신
+    items.push({ mall, name: `${mall}_장바구니_견적_${stamp}.xls`, b64: bytesToB64(bytes) });
+    writeAccum(items);
+
+    loadAccumIntoFiles();
+    toast(`${mall} 장바구니를 담았습니다 (담긴 몰 ${items.length}개)`);
+    return true;
+  } catch (e) {
+    console.error(e);
+    setStatus("장바구니에서 넘어온 데이터를 읽지 못했습니다: " + e.message, false);
+    return false;
+  }
+}
+
+(async () => {
+  const fromCart = await loadFromHash();
+  await initPyodide();
+  // 자동 변환하지 않는다. 여러 몰을 담을 수 있으므로, 다 담은 뒤 [변환하기]를 한 번만 누른다.
+  // (담을 때마다 변환하면 몰 수만큼 변환·Gemini 호출이 반복된다.)
+  if (fromCart && files.length > 0) {
+    setStatus(`장바구니 ${files.length}개 몰을 담았습니다. 더 담을 몰이 있으면 그 장바구니에서 북마크를 누르고, `
+      + `다 담았으면 아래 [변환하기]를 누르세요.`, false);
+  }
+})().catch((e) => { setStatus("초기화 실패: " + e.message, false); console.error(e); });
+</script>
+</body>
+</html>
