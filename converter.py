@@ -292,7 +292,42 @@ def parse_11st(data, source):
     lines = [ln.strip() for ln in text.split("\n")]
 
     pending = None
+# ---------------------------------------------------------------- 예스24 (장바구니)
 
+def parse_yes24(html, source):
+    """예스24 장바구니 표(HTML)를 파싱한다.
+    카트 화면은 Vue로 렌더링되어 수량 input 값이 DOM 프로퍼티로만 있고
+    저장한 HTML(outerHTML)에는 담기지 않는다. 대신 '상품금액'(줄 합계)을
+    '판매가'로 나눠 수량을 역산한다. 배송비는 카트 화면에 없으므로(결제 단계에서
+    계산) 0으로 둔다 — 필요하면 실제 결제 후 배송비를 수동으로 더해야 한다."""
+    soup = BeautifulSoup(html, "lxml")
+    sheet = Sheet(mall="예스24", source=source)
+
+    table = soup.find("table", class_="tb_cart")
+    if table is None:
+        raise ValueError("예스24 장바구니 표를 찾지 못했습니다.")
+
+    for tr in table.find_all("tr"):
+        name_el = tr.select_one("div.goods_name a.pd_a")
+        if name_el is None:
+            continue  # 헤더 행 등은 건너뜀
+
+        name = name_el.get_text(" ", strip=True)
+        name = re.sub(r"^\[도서\]\s*", "", name)
+
+        unit_el = (tr.select_one("span.nor_price em.yes_m")
+                   or tr.select_one("span.dash_price em.yes_m"))
+        total_el = tr.select_one("td.goods_price strong.price_txt")
+        unit = to_int(unit_el.get_text()) if unit_el else 0
+        total = to_int(total_el.get_text()) if total_el else 0
+        qty = round(total / unit) if unit else 1
+
+        sheet.items.append(Item(
+            name=name, spec="", qty=qty, amount=total,
+            note="", mall="예스24",
+        ))
+
+    return sheet
     def flush():
         nonlocal pending
         if not pending:
@@ -343,7 +378,7 @@ def parse_11st(data, source):
 
 MALL_NEW = "옥션"
 MALL_OLD = "지마켓"
-MALL_ORDER = ("지마켓", "옥션", "11번가")
+MALL_ORDER = ("지마켓", "옥션", "11번가", "예스24")
 
 # 장바구니 북마클릿이 합성한 견적서에 심는 몰 표식.
 # 11번가는 옥션과 같은 신식 형식으로 합성되므로 형식만으론 구분이 안 된다.
@@ -366,8 +401,9 @@ def parse_file(name, data):
 
     # 표식이 없는 일반 업로드에서만 11번가 HTML 을 걸러낸다(11번가 원본 견적서는 PDF 로만 지원).
     if cart_mall is None and ("11번가" in html or "십일번가" in html):
-        raise ValueError("11번가 견적서는 PDF 로 받아주세요.")
-
+        raise ValueError("11번가 견적서는 PDF 로 받아주세요.")   
+    if "tb_cart" in html and "yes24.com" in html:
+        return parse_yes24(html, name)
     if "table-data__value" in html or "list__estimate-summary" in html:
         return parse_ebay_new(html, cart_mall or MALL_NEW, name)
     if "font-tahoma" in html:
