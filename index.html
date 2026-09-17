@@ -265,6 +265,30 @@
   </div>
 
   <div class="card">
+    <div class="cardhead"><span class="badge">2</span><span class="cardtitle">Gemini API 키 <span class="opt">(선택 · 품명 자동 정리)</span></span></div>
+    <input type="password" id="key" placeholder="API 키 붙여넣기 — 비워두면 규칙 기반으로 정리" autocomplete="off">
+    <p class="hint">품명을 더 깔끔하게 정리하려면 본인 Gemini 키를 넣으세요. 키는 이 브라우저에서 구글로 직접 전송되며 서버를 거치지 않습니다. <a class="ghost" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">키 발급 →</a></p>
+    <label class="chk"><input type="checkbox" id="remember"> 이 브라우저에 키 기억하기 (본인 PC에서만 권장)</label>
+    <div class="grid2">
+      <label class="sel">모델
+        <select id="model">
+          <option value="gemini-flash-latest" selected>flash · 품질 우선(권장)</option>
+          <option value="gemini-flash-lite-latest">flash-lite · 저비용/대량</option>
+        </select>
+      </label>
+      <label class="sel">정리 강도 (thinking)
+        <select id="thinking">
+          <option value="minimal">minimal · 가장 저렴·빠름</option>
+          <option value="low" selected>low · 권장(품질/비용 균형)</option>
+          <option value="medium">medium · 품질↑·비쌈</option>
+          <option value="">끄기(모델 기본값)</option>
+        </select>
+      </label>
+    </div>
+    <p class="hint"><b>무료 티어 키는 요금이 청구되지 않습니다.</b> 결과의 "약 N원"은 <b>유료 키 기준</b> 참고 비용입니다. 기본값 <b>flash + low</b>는 옵션·규격까지 깔끔하게 정리해 공문서에 적합합니다(견적서 1건당 유료 기준 15원 안팎). 대량·저비용이 우선이면 <b>flash-lite</b>로 바꾸세요. 넣기 전 <b>검토용 보고서의 원문대조</b>로 확인을 권장합니다.</p>
+  </div>
+
+  <div class="card">
     <div class="cardhead"><span class="badge">3</span><span class="cardtitle">변환 실행</span></div>
     <div class="row">
       <button class="primary" id="run" disabled>변환하기</button>
