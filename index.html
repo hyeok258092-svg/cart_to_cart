@@ -249,7 +249,7 @@
     <button class="tab" id="tab-guide" data-tab="guide" role="tab">사용방법<span class="t2">처음이면 여기</span></button>
   </div>
 
-  <p class="lead" id="lead-teacher">선생님이 <b>품의</b>할 때 쓰는 화면입니다. 장바구니(또는 견적서)를 넣으면 에듀파인 <b>품의용 「품목내역」</b> 서식과, 행정실에 넘길 정리본을 만들어 줍니다. 모든 처리는 <b>이 브라우저 안에서만</b> 이뤄지고 파일·API 키는 서버로 전송되지 않습니다.</p>
+  <p class="lead" id="lead-teacher">선생님이 <b>품의</b>할 때 쓰는 화면입니다. 장바구니(또는 견적서)를 넣으면 에듀파인 <b>품의용 「품목내역」</b> 서식과, 행정실에 넘길 정리본을 만들어 줍니다. 모든 처리는 <b>이 브라우저 안에서만</b> 이뤄지고 파일은 서버로 전송되지 않습니다.</p>
   <p class="lead hidden" id="lead-admin">행정직이 <b>원인행위</b>할 때 쓰는 화면입니다. 견적서를 넣으면 에듀파인 <b>「물품내역」</b> 업로드 서식과 검토용 보고서(요약·원문대조)를 만들어 줍니다. 모든 처리는 <b>이 브라우저 안에서만</b> 이뤄집니다.</p>
 
   <div id="pane-work">
@@ -265,31 +265,7 @@
   </div>
 
   <div class="card">
-    <div class="cardhead"><span class="badge">2</span><span class="cardtitle">Gemini API 키 <span class="opt">(선택 · 품명 자동 정리)</span></span></div>
-    <input type="password" id="key" placeholder="API 키 붙여넣기 — 비워두면 규칙 기반으로 정리" autocomplete="off">
-    <p class="hint">품명을 더 깔끔하게 정리하려면 본인 Gemini 키를 넣으세요. 키는 이 브라우저에서 구글로 직접 전송되며 서버를 거치지 않습니다. <a class="ghost" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">키 발급 →</a></p>
-    <label class="chk"><input type="checkbox" id="remember"> 이 브라우저에 키 기억하기 (본인 PC에서만 권장)</label>
-    <div class="grid2">
-      <label class="sel">모델
-        <select id="model">
-          <option value="gemini-flash-latest" selected>flash · 품질 우선(권장)</option>
-          <option value="gemini-flash-lite-latest">flash-lite · 저비용/대량</option>
-        </select>
-      </label>
-      <label class="sel">정리 강도 (thinking)
-        <select id="thinking">
-          <option value="minimal">minimal · 가장 저렴·빠름</option>
-          <option value="low" selected>low · 권장(품질/비용 균형)</option>
-          <option value="medium">medium · 품질↑·비쌈</option>
-          <option value="">끄기(모델 기본값)</option>
-        </select>
-      </label>
-    </div>
-    <p class="hint"><b>무료 티어 키는 요금이 청구되지 않습니다.</b> 결과의 "약 N원"은 <b>유료 키 기준</b> 참고 비용입니다. 기본값 <b>flash + low</b>는 옵션·규격까지 깔끔하게 정리해 공문서에 적합합니다(견적서 1건당 유료 기준 15원 안팎). 대량·저비용이 우선이면 <b>flash-lite</b>로 바꾸세요. 넣기 전 <b>검토용 보고서의 원문대조</b>로 확인을 권장합니다.</p>
-  </div>
-
-  <div class="card">
-    <div class="cardhead"><span class="badge">3</span><span class="cardtitle">변환 실행</span></div>
+    <div class="cardhead"><span class="badge">2</span><span class="cardtitle">변환 실행</span></div>
     <div class="row">
       <button class="primary" id="run" disabled>변환하기</button>
       <span id="status"><span class="spinner"></span>준비 중… (처음 한 번은 파이썬 런타임을 내려받아 조금 걸립니다)</span>
@@ -414,7 +390,7 @@
     </div>
 
     <h3>② 변환기에 넣기 — 두 가지 방법 중 하나</h3>
-    <p class="hint" style="margin-top:0">위 흐름의 <b>②번(넣기)</b>을 하는 방법입니다. 아래 <b>파일 올리기 칸</b>·<b>변환하기</b>·<b>API 키 칸</b>은 <b>품의자</b> 또는 <b>원인행위</b> 탭에 있습니다. 이 사용방법 탭에는 없으니, 위에서 <b>탭을 바꿔</b> 주세요.</p>
+    <p class="hint" style="margin-top:0">위 흐름의 <b>②번(넣기)</b>을 하는 방법입니다. 아래 <b>파일 올리기 칸</b>·<b>변환하기</b>는 <b>품의자</b> 또는 <b>원인행위</b> 탭에 있습니다. 이 사용방법 탭에는 없으니, 위에서 <b>탭을 바꿔</b> 주세요.</p>
 
     <div class="method">
       <div class="method-h"><span class="method-n">1</span> 견적서 파일 올리기 <span class="base-tag">기본</span></div>
@@ -448,10 +424,6 @@
       <p class="hint" style="margin:8px 0 0">팝업이 막히면 견적서 파일로 받아, <b>품의자/원인행위 탭의 파일 올리기 칸</b>에 올려도 동일합니다.</p>
     </div>
 
-    <h3>Gemini 품명 정리 (선택)</h3>
-    <p>본인 Gemini API 키를 <b>품의자/원인행위 탭의 API 키 칸</b>에 넣으면 품명·규격을 더 깔끔하게 다듬습니다. 키는 이 브라우저에서 구글로 직접 전송되며 서버를 거치지 않습니다. 비워 두면 규칙 기반으로만 정리합니다.
-       <a class="ghost" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">키 발급 →</a></p>
-
     <h3>에듀파인 본문 문구</h3>
     <p>변환이 끝나면 결과 아래에 <b>품의(또는 지출원인행위) 본문</b>이 만들어집니다. 그대로 복사해 에듀파인 본문에 붙여넣으세요.</p>
     <ul>
@@ -476,14 +448,14 @@
     </ul>
 
     <h3>안전한가요?</h3>
-    <p>파일 분석과 엑셀 생성은 모두 <b>사용자 브라우저 안(WebAssembly)</b>에서 이뤄집니다. 견적서 파일과 API 키는 외부 서버로 전송·저장되지 않습니다.
+    <p>파일 분석과 엑셀 생성은 모두 <b>사용자 브라우저 안(WebAssembly)</b>에서 이뤄집니다. 견적서 파일은 외부 서버로 전송·저장되지 않습니다.
        정리된 품명·규격은 가독성을 위해 재작성된 값이므로, 공문서 반영 전 검토용 보고서의 <b>원문대조</b>로 확인하시길 권합니다.</p>
   </div>
 </div>
 
 <footer class="gov-footer">
   <p class="contact">🛠 /p>
-  <b>개인정보 및 처리 안내</b> · 모든 파일 분석과 엑셀 생성은 사용자 브라우저(WebAssembly) 내에서 수행되며, 견적서 파일과 API 키는 외부 서버로 전송·저장되지 않습니다. Gemini 품명 정리를 사용하는 경우에 한해, 품명·규격 텍스트가 사용자의 키로 Google API에 직접 전송됩니다.<br>
+  <b>개인정보 및 처리 안내</b> · 모든 파일 분석과 엑셀 생성은 사용자 브라우저(WebAssembly) 내에서 수행되며, 견적서 파일은 외부 서버로 전송·저장되지 않습니다.<br>
   정리된 품명·규격은 가독성을 위해 재작성된 값이므로, 공문서 반영 전 <b>원문대조</b> 시트로 확인하시기 바랍니다.
 </footer>
 <div class="toast" id="toast"></div>
@@ -513,7 +485,7 @@ function updateProgress(done, total, note) {
   progressWrap.classList.remove("hidden");
   const pct = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
   progressBar.style.width = pct + "%";
-  setStatus(note ? note : `Gemini 품명 정리 중… ${done}/${total} (${pct}%)`, true);
+  setStatus(note ? note : `품명 정리 중… ${done}/${total} (${pct}%)`, true);
 }
 function toast(msg) {
   const t = $("toast"); t.textContent = msg; t.classList.add("show");
@@ -554,27 +526,6 @@ function updateRunState() {
   runBtn.disabled = !(pyReady && files.length > 0);
 }
 
-// ---------- 키 기억 ----------
-const keyInput = $("key"), rememberChk = $("remember");
-const savedKey = localStorage.getItem("gemini_key");
-if (savedKey) { keyInput.value = savedKey; rememberChk.checked = true; }
-rememberChk.addEventListener("change", () => {
-  if (!rememberChk.checked) localStorage.removeItem("gemini_key");
-  else if (keyInput.value.trim()) localStorage.setItem("gemini_key", keyInput.value.trim());
-});
-keyInput.addEventListener("input", () => {
-  if (rememberChk.checked) localStorage.setItem("gemini_key", keyInput.value.trim());
-});
-
-// ---------- 모델/thinking 선택 (선택값 기억) ----------
-const modelSel = $("model"), thinkingSel = $("thinking");
-const savedModel = localStorage.getItem("gemini_model");
-const savedThinking = localStorage.getItem("gemini_thinking");
-if (savedModel !== null) modelSel.value = savedModel;
-if (savedThinking !== null) thinkingSel.value = savedThinking;
-modelSel.addEventListener("change", () => localStorage.setItem("gemini_model", modelSel.value));
-thinkingSel.addEventListener("change", () => localStorage.setItem("gemini_thinking", thinkingSel.value));
-
 // ---------- Pyodide 초기화 ----------
 async function initPyodide() {
   setStatus("파이썬 런타임 로드 중…", true);
@@ -599,20 +550,14 @@ await micropip.install("pdfplumber", deps=False)   # pypdfium2(네이티브) 건
 runBtn.addEventListener("click", async () => {
   if (!pyReady || files.length === 0) return;
   runBtn.disabled = true;
-  const key = keyInput.value.trim();
-  const useGemini = key.length > 0;
-  setStatus(useGemini ? "견적서 분석 + Gemini 품명 정리 중…" : "견적서 분석 중…", true);
+  setStatus("견적서 분석 중…", true);
 
   try {
     const jsFiles = files.map((f) => [f.name, f.bytes]);
     pyodide.globals.set("JS_FILES", pyodide.toPy(jsFiles));
-    pyodide.globals.set("JS_KEY", key);
-    pyodide.globals.set("JS_USE_GEMINI", useGemini);
     pyodide.globals.set("JS_PROGRESS", updateProgress);
-    pyodide.globals.set("JS_MODEL", modelSel.value);
-    pyodide.globals.set("JS_THINKING", thinkingSel.value);
     const pyRes = await pyodide.runPythonAsync(
-      "await convert(JS_FILES, JS_KEY, JS_USE_GEMINI, JS_PROGRESS, JS_MODEL, JS_THINKING)"
+      "await convert(JS_FILES, '', False, JS_PROGRESS)"
     );
     const res = pyRes.toJs({ dict_converter: Object.fromEntries });
     pyRes.destroy();
